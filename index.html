@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,12 +8,46 @@
   <script src="https://cdn.jsdelivr.net/npm/bitcoinjs-lib@6.1.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.4/dist/bip39.browser.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    h1 { text-align: center; }
-    button { width: 100%; padding: 10px; margin: 20px 0; font-size: 18px; }
-    .output { word-break: break-word; }
-    .result { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
-    .balance { color: green; font-weight: bold; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      background: linear-gradient(to right, #e0f7fa, #e1bee7);
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #4a148c;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 20px 0;
+      font-size: 18px;
+      background-color: #4a148c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #6a1b9a;
+    }
+    .output {
+      word-break: break-word;
+    }
+    .result {
+      border: 1px solid #ddd;
+      background-color: #f3e5f5;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .balance {
+      color: green;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
