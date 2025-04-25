@@ -1,103 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bitcoin Wallet Scanner (Error Display)</title>
-  <script src="https://cdn.jsdelivr.net/npm/bitcoinjs-lib@6.1.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.4/dist/bip39.browser.min.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      background: linear-gradient(to right, #e0f7fa, #e1bee7);
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      color: #4a148c;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin: 20px 0;
-      font-size: 18px;
-      background-color: #4a148c;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #6a1b9a;
-    }
-    .output {
-      word-break: break-word;
-    }
-    .result {
-      border: 1px solid #ddd;
-      background-color: #f3e5f5;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-    }
-    .balance {
-      color: green;
-      font-weight: bold;
-    }
-    .error {
-      color: red;
-      background-color: #ffebee;
-      border: 1px solid red;
-      padding: 10px;
-      margin-top: 20px;
-      border-radius: 5px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Wallet Scanner (Error Display)</h1>
-  <button onclick="generateAndCheck()">Generate & Check Wallet</button>
-  <div id="results"></div>
-  <div id="errorLog" class="error" style="display:none;"></div>
-
-  <script>
-    async function generateAndCheck() {
-      const errorLog = document.getElementById("errorLog");
-      errorLog.style.display = "none";
-      errorLog.textContent = "";
-
-      try {
-        const mnemonic = bip39.generateMnemonic();
-        const seed = await bip39.mnemonicToSeed(mnemonic);
-        const root = bitcoin.bip32.fromSeed(seed);
-        const child = root.derivePath("m/44'/0'/0'/0/0");
-        const { address } = bitcoin.payments.p2pkh({ pubkey: child.publicKey });
-        const wif = child.toWIF();
-
-        const div = document.createElement("div");
-        div.className = "result";
-        div.innerHTML = `<p><strong>Address:</strong> ${address}</p><p><strong>Private Key:</strong> ${wif}</p><p id="bal-${address}">Checking balance...</p>`;
-        document.getElementById("results").prepend(div);
-
-        const res = await fetch("https://blockstream.info/api/address/" + address);
-        if (!res.ok) {
-          document.getElementById("bal-" + address).textContent = "Failed to check balance.";
-          return;
-        }
-
-        const data = await res.json();
-        const balance = (data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum) / 100000000;
-        const balText = balance > 0 ? `<span class='balance'>Balance: ${balance} BTC</span>` : "No balance";
-        document.getElementById("bal-" + address).innerHTML = balText;
-      } catch (err) {
-        errorLog.style.display = "block";
-        errorLog.textContent = "Error: " + err.message;
-      }
-    }
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bitcoin Wallet Scanner</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
