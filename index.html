@@ -2,124 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Old Wallet Generator</title>
-  <script src="https://cdn.jsdelivr.net/npm/bitcoinjs-lib@6.1.0/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bitcoin Wallet Generator</title>
+  <script src="https://cdn.jsdelivr.net/gh/pointbiz/bitcoinjs-lib-browser@master/bitcoinjs-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.4/dist/bip39.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    h1 { text-align: center; }
+    button { width: 100%; padding: 10px; margin: 20px 0; font-size: 18px; }
+    .output { word-break: break-all; }
+    canvas { display: block; margin: 20px auto; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4">
-  <div class="max-w-lg mx-auto">
-    <h1 class="text-3xl font-bold mb-4 text-center">Old Wallet Generator</h1>
-    <div class="space-x-2 mb-6 flex justify-center flex-wrap">
-      <button onclick="generateWallet()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full sm:w-auto mb-2">Generate Wallet</button>
-      <button onclick="downloadWallet()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full sm:w-auto mb-2">Download Wallet</button>
-      <button onclick="checkBalance()" class="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded w-full sm:w-auto mb-2">Check Balance</button>
-    </div>
-
-    <div id="wallet" class="mb-10 hidden">
-      <p><strong>Address:</strong> <span id="address"></span></p>
-      <p><strong>Private Key (WIF):</strong> <span id="wif"></span></p>
-      <p><strong>Balance:</strong> <span id="balance">-</span></p>
-      <canvas id="qr" class="mt-4 mx-auto"></canvas>
-    </div>
-
-    <div class="mb-10">
-      <h2 class="text-2xl font-semibold mb-2">Brain Wallet Generator</h2>
-      <input type="text" id="brainInput" placeholder="Enter a passphrase" class="text-black w-full px-3 py-2 mb-2 rounded" />
-      <button onclick="generateBrainWallet()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full sm:w-auto mb-2">Generate from Passphrase</button>
-      <div id="brainWallet" class="mt-4 hidden">
-        <p><strong>Address:</strong> <span id="brainAddress"></span></p>
-        <p><strong>Private Key (WIF):</strong> <span id="brainWif"></span></p>
-      </div>
-    </div>
-
-    <div>
-      <h2 class="text-2xl font-semibold mb-2">Vanity Address Search</h2>
-      <input type="text" id="vanityInput" placeholder="Enter prefix (e.g. 1Love)" class="text-black w-full px-3 py-2 mb-2 rounded" />
-      <button onclick="searchVanityAddress()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full sm:w-auto mb-2">Search Vanity</button>
-      <div id="vanityWallet" class="mt-4 hidden">
-        <p><strong>Address:</strong> <span id="vanityAddress"></span></p>
-        <p><strong>Private Key (WIF):</strong> <span id="vanityWif"></span></p>
-      </div>
-    </div>
+<body>
+  <h1>Bitcoin Wallet Generator</h1>
+  <button onclick="generate()">Generate Wallet</button>
+  <div class="output">
+    <p><strong>Address:</strong> <span id="address"></span></p>
+    <p><strong>Private Key (WIF):</strong> <span id="privateKey"></span></p>
+    <canvas id="qrcode"></canvas>
   </div>
 
   <script>
-    let currentWallet = {};
+    async function generate() {
+      const seed = await bip39.mnemonicToSeed(bip39.generateMnemonic());
+      const root = bitcoinjs.bip32.fromSeed(seed);
+      const child = root.derivePath("m/44'/0'/0'/0/0");
+      const { address } = bitcoinjs.payments.p2pkh({ pubkey: child.publicKey });
+      const wif = child.toWIF();
 
-    function generateWallet() {
-      const keyPair = bitcoin.ECPair.makeRandom();
-      const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey });
-      const wif = keyPair.toWIF();
-      currentWallet = { address, wif };
+      document.getElementById("address").textContent = address;
+      document.getElementById("privateKey").textContent = wif;
 
-      document.getElementById('address').textContent = address;
-      document.getElementById('wif').textContent = wif;
-      document.getElementById('balance').textContent = '-';
-      document.getElementById('wallet').classList.remove('hidden');
-      QRCode.toCanvas(document.getElementById('qr'), address, { width: 180 }, err => err && console.error(err));
-    }
-
-    function downloadWallet() {
-      if (!currentWallet.address) return alert('Generate wallet first!');
-      const blob = new Blob([
-        `Address: ${currentWallet.address}\nPrivate Key: ${currentWallet.wif}`
-      ], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'wallet.txt';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    async function checkBalance() {
-      if (!currentWallet.address) return alert('Generate wallet first!');
-      try {
-        const res = await fetch(`https://api.blockchair.com/bitcoin/dashboards/address/${currentWallet.address}`);
-        const data = await res.json();
-        const satoshis = data.data[currentWallet.address].address.balance;
-        const btc = satoshis / 1e8;
-        document.getElementById('balance').textContent = btc + ' BTC';
-      } catch (err) {
-        console.error(err);
-        alert('Failed to fetch balance.');
-      }
-    }
-
-    function generateBrainWallet() {
-      const passphrase = document.getElementById('brainInput').value.trim();
-      if (!passphrase) return alert('Enter a passphrase.');
-      const hash = bitcoin.crypto.sha256(Buffer.from(passphrase));
-      const d = bitcoin.BigInteger ? new bitcoin.BigInteger(hash) : bitcoin.ECPair.fromPrivateKey(hash);
-      const keyPair = bitcoin.ECPair.fromPrivateKey(hash);
-      const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey });
-      const wif = keyPair.toWIF();
-      document.getElementById('brainAddress').textContent = address;
-      document.getElementById('brainWif').textContent = wif;
-      document.getElementById('brainWallet').classList.remove('hidden');
-    }
-
-    function searchVanityAddress() {
-      const prefix = document.getElementById('vanityInput').value.trim();
-      if (!prefix || !prefix.startsWith('1')) return alert('Prefix must start with 1');
-      let attempt = 0;
-      function search() {
-        const keyPair = bitcoin.ECPair.makeRandom();
-        const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey });
-        if (address.startsWith(prefix)) {
-          document.getElementById('vanityAddress').textContent = address;
-          document.getElementById('vanityWif').textContent = keyPair.toWIF();
-          document.getElementById('vanityWallet').classList.remove('hidden');
-        } else {
-          if (++attempt % 100 === 0) console.log('Attempts:', attempt);
-          requestAnimationFrame(search);
-        }
-      }
-      search();
+      QRCode.toCanvas(document.getElementById("qrcode"), address, function (error) {
+        if (error) console.error(error);
+      });
     }
   </script>
 </body>
